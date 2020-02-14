@@ -236,11 +236,11 @@ def max_pool_forward_im2col(x, pool_param):
     assert (H - pool_height) % stride == 0, 'Invalid height'
     assert (W - pool_width) % stride == 0, 'Invalid width'
 
-    out_height = (H - pool_height) / stride + 1
-    out_width = (W - pool_width) / stride + 1
+    out_height = (H - pool_height) // stride + 1
+    out_width = (W - pool_width) // stride + 1
 
     x_split = x.reshape(N * C, 1, H, W)
-    x_cols = im2col(x_split, pool_height, pool_width, padding=0, stride=stride)
+    x_cols = im2col_cython(x_split, pool_height, pool_width, padding=0, stride=stride)
     x_cols_argmax = np.argmax(x_cols, axis=0)
     x_cols_max = x_cols[x_cols_argmax, np.arange(x_cols.shape[1])]
     out = x_cols_max.reshape(out_height, out_width, N, C).transpose(2, 3, 0, 1)
