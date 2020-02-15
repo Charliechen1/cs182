@@ -295,7 +295,7 @@ class FullyConnectedNet(object):
                 dz = dropout_backward(dz, drop_caches[idx - 2])
             dz = relu_backward(dz, act_caches[idx - 2])
             if self.use_batchnorm:
-                dz, dgamma, dbeta = batchnorm_backward(dz, bn_caches[idx - 2])
+                dz, dgamma, dbeta = batchnorm_backward_alt(dz, bn_caches[idx - 2])
                 grads[f'beta{idx - 1}'] = dbeta
                 grads[f'gamma{idx - 1}'] = dgamma
                 

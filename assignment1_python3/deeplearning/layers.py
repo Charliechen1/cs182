@@ -225,7 +225,6 @@ def batchnorm_backward(dout, cache):
     x, x_norm, mu, var, gamma, beta, eps = cache
 
     N, D = x.shape
-
     dx_norm = dout * gamma
     dvar = np.sum(dx_norm * (x - mu), axis=0) * -0.5 * (var + eps) ** -1.5
     dmu = np.sum(dx_norm * -(var + eps) ** -0.5, axis=0) + dvar * np.mean(-2. * (x - mu), axis=0)
@@ -602,7 +601,7 @@ def spatial_batchnorm_backward(dout, cache):
     
     N, C, H, W = dout.shape
     dout_reshaped = dout.transpose(0,2,3,1).reshape(N * H * W, C)
-    dx_tmp, dgamma, dbeta = batchnorm_backward(dout_reshaped, cache)
+    dx_tmp, dgamma, dbeta = batchnorm_backward_alt(dout_reshaped, cache)
     dx = dx_tmp.reshape(N, H, W, C).transpose(0, 3, 1, 2)
 
     return dx, dgamma, dbeta

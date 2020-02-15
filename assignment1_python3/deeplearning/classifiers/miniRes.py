@@ -78,18 +78,16 @@ class MiniResNet(object):
         
         idx = 0
         if self.use_batchnorm:
-            #for _ in conv_params:
-            #    idx += 1
-            #    self.params[f"beta{idx}"] = np.zeros(C)
-            #    self.params[f"gamma{idx}"] = np.ones(C)
+            for conv_param in conv_params:
+                idx += 1
+                self.params[f"beta{idx}"] = np.zeros(conv_param['num_filters'])
+                self.params[f"gamma{idx}"] = np.ones(conv_param['num_filters'])
             
             for dim in hidden_dims:
                 idx += 1
                 self.params[f"beta{idx}"] = np.zeros(dim)
                 self.params[f"gamma{idx}"] = np.ones(dim)
-        #print("parameters:")
-        #for k, v in self.params.items():
-        #    print(k, v.shape)
+                
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -151,15 +149,15 @@ class MiniResNet(object):
         z = X
         for c_i in range(self.num_conv):
             idx += 1
-            z, conv_cache = conv_relu_pool_forward(z, 
+            z, conv_cache = conv_relu_pool_bn_forward(z, 
                        self.params[f"W{idx}"], 
                        self.params[f"b{idx}"], 
+                       self.params[f"gamma{idx}"], 
+                       self.params[f"beta{idx}"], 
                        self.conv_params[c_i], 
-                       self.pool_params[c_i])
+                       self.pool_params[c_i],
+                       self.bn_params[idx - 1])
             conv_caches.append(conv_cache)
-            #if self.use_batchnorm:
-            #    z, spbn_cache = spatial_batchnorm_forward(z, self.params[f"gamma{idx}"], self.params[f"beta{idx}"], bn_param[idx - 1])
-            #    bn_caches.append(spbn_cache)
         # record the shape of z here, need to recover the shape when doing back propagation
         interim_shape = z.shape
         z = z.reshape(z.shape[0], -1)
@@ -168,10 +166,9 @@ class MiniResNet(object):
             z, affi_cache = affine_bn_relu_dropout_forward(z, 
                        self.params[f"W{idx}"], 
                        self.params[f"b{idx}"], 
-                       self.params[f"gamma{a_i + 1}"], 
-                       self.params[f"beta{a_i + 1}"], 
-                       #self.bn_params[idx - 1], 
-                       self.bn_params[a_i], 
+                       self.params[f"gamma{idx}"], 
+                       self.params[f"beta{idx}"], 
+                       self.bn_params[idx - 1], 
                        self.dropout_param)
             affi_caches.append(affi_cache)
         
@@ -207,12 +204,12 @@ class MiniResNet(object):
         for a_i in range(self.num_affi - 1, -1, -1):
             idx -= 1
             # dx, dw, db, dgamma, dbeta
-            dz, grads[f'W{idx}'], grads[f'b{idx}'], grads[f'gamma{a_i + 1}'], grads[f'beta{a_i + 1}'] \
+            dz, grads[f'W{idx}'], grads[f'b{idx}'], grads[f'gamma{idx}'], grads[f'beta{idx}'] \
                 = affine_bn_relu_dropout_backward(dz, affi_caches[a_i])
         dz = dz.reshape(interim_shape)
         for c_i in range(self.num_conv - 1, -1, -1):
             idx -= 1
-            dz, grads[f'W{idx}'], grads[f'b{idx}'] = conv_relu_pool_backward(dz, conv_caches[c_i])
+            dz, grads[f'W{idx}'], grads[f'b{idx}'], grads[f'gamma{idx}'], grads[f'beta{idx}'] = conv_relu_pool_bn_backward(dz, conv_caches[c_i])
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
